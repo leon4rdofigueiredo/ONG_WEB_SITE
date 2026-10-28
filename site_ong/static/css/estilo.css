@@ -416,6 +416,40 @@ a {
     accent-color: var(--azul);
 }
 
+/* mensagens do formulario de voluntario (sucesso no envio e erros de validacao) */
+.aviso-sucesso,
+.aviso-erro {
+    margin-bottom: 20px;
+    padding: 14px 18px;
+    border-radius: 8px;
+    font-weight: 700;
+}
+
+.aviso-sucesso {
+    background: #e3f6e8;
+    color: #1e6b34;
+    border: 1px solid #a8dcb6;
+}
+
+.aviso-erro {
+    background: #fdecec;
+    color: #a12626;
+    border: 1px solid #f1b5b5;
+}
+
+.erro-campo {
+    grid-column: 3;
+    margin-top: 6px;
+    color: #d00000;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+/* o asterisco vem do css, assim nao precisa repetir em cada mensagem */
+.erro-campo::before {
+    content: "* ";
+}
+
 .botao-enviar {
     display: block;
     margin: 25px auto 0;
