@@ -25,13 +25,31 @@ load_dotenv(BASE_DIR / '.env')
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
+# no computador de quem desenvolve nada disso precisa estar no .env: DEBUG fica ligado e usa a chave de teste.
+# no Render as variaveis DEBUG=False e SECRET_KEY sao cadastradas no painel (Environment)
+DEBUG = os.environ.get('DEBUG', 'True') == 'True'
+
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-6e1**o2&71&p($xgvv70z!_bhps+qb%6i0==p1#se6voq5e8^_'
+SECRET_KEY = os.environ.get('SECRET_KEY', '')
+if not SECRET_KEY:
+    if not DEBUG:
+        raise RuntimeError('Defina a variavel SECRET_KEY (obrigatoria com DEBUG=False).')
+    SECRET_KEY = 'django-insecure-6e1**o2&71&p($xgvv70z!_bhps+qb%6i0==p1#se6voq5e8^_'
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+CSRF_TRUSTED_ORIGINS = []
 
-ALLOWED_HOSTS = []
+# o Render preenche essa variavel sozinho com o endereco do site (ex.: caminho-esperanca.onrender.com)
+RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+    CSRF_TRUSTED_ORIGINS.append('https://' + RENDER_EXTERNAL_HOSTNAME)
+
+if not DEBUG:
+    # o Render recebe o https e repassa pro Django; esse cabecalho avisa que a conexao original era segura
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
 
 
 # Application definition
@@ -48,6 +66,8 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # serve o css e as imagens no site publicado (com DEBUG=False o Django nao serve sozinho)
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -79,8 +99,9 @@ WSGI_APPLICATION = 'caminho.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.1/ref/settings/#databases
 
-# o banco e escolhido pelo DB_ENGINE do .env: mysql (padrao) ou sqlite3.
-# no sqlite so precisa de DB_ENGINE=django.db.backends.sqlite3, o arquivo e o db.sqlite3 da raiz
+# o banco e escolhido pelo DB_ENGINE do .env: mysql (padrao), postgresql ou sqlite3.
+# no sqlite so precisa de DB_ENGINE=django.db.backends.sqlite3, o arquivo e o db.sqlite3 da raiz.
+# no Render o banco e Postgres (Neon): DB_ENGINE=django.db.backends.postgresql
 DB_ENGINE = os.environ.get('DB_ENGINE', 'django.db.backends.mysql')
 
 if DB_ENGINE == 'django.db.backends.sqlite3':
@@ -91,6 +112,17 @@ if DB_ENGINE == 'django.db.backends.sqlite3':
         }
     }
 else:
+    if DB_ENGINE == 'django.db.backends.mysql':
+        # PyMySQL no lugar do mysqlclient: nao precisa compilar nada pra instalar (Windows e Render)
+        import pymysql
+        pymysql.install_as_MySQLdb()
+        porta_padrao = '3306'
+        opcoes = {'charset': 'utf8mb4'}
+    else:
+        # postgresql: o Neon so aceita conexao criptografada
+        porta_padrao = '5432'
+        opcoes = {'sslmode': os.environ.get('DB_SSLMODE', 'require')}
+
     DATABASES = {
         'default': {
             'ENGINE': DB_ENGINE,
@@ -98,10 +130,8 @@ else:
             'USER': os.environ.get('DB_USER', ''),
             'PASSWORD': os.environ.get('DB_PASSWORD', ''),
             'HOST': os.environ.get('DB_HOST', 'localhost'),
-            'PORT': os.environ.get('DB_PORT', '3306'),
-            'OPTIONS': {
-                'charset': 'utf8mb4',
-            },
+            'PORT': os.environ.get('DB_PORT', porta_padrao),
+            'OPTIONS': opcoes,
         }
     }
 
@@ -141,6 +171,17 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
 STATIC_URL = 'static/'
+# o collectstatic (no build.sh) junta os arquivos aqui e o whitenoise serve daqui
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+STORAGES = {
+    'default': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    },
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedStaticFilesStorage',
+    },
+}
 
 
 # Email

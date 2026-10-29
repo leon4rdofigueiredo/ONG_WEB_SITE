@@ -56,6 +56,21 @@ Feito com **Django** (Python), **HTML** e **CSS**.
 Enquanto o login de verdade não está pronto, dá para entrar no painel pela tela `/admin/` com usuário **admin** e senha **admin**.
 Esse login só funciona com `DEBUG = True` (no computador de quem está desenvolvendo) e deve ser apagado quando o backend ficar pronto.
 
+## Site publicado (Render)
+
+O site roda no [Render](https://render.com) com banco Postgres no [Neon](https://neon.tech).
+A cada push na `main` o Render faz o deploy sozinho, rodando o `build.sh` (instala as dependências, junta o CSS/imagens e roda o `migrate`).
+
+Configuração do Web Service no Render:
+
+- **Build Command:** `bash build.sh`
+- **Start Command:** `gunicorn caminho.wsgi:application`
+- **Environment:** `DEBUG=False`, `SECRET_KEY` (longa e secreta), `DB_ENGINE=django.db.backends.postgresql`,
+  `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` (dados do Neon)
+
+No site publicado o login de teste não funciona (`DEBUG=False`); os cadastros ficam em `/admin-django/`.
+Para criar o usuário do admin, aponte o `.env` local para o banco do Neon e rode `python manage.py createsuperuser`.
+
 ## O que já funciona
 
 - Todas as páginas, com o mesmo menu e rodapé (`base.html`)
@@ -83,5 +98,6 @@ site_ong/
   static/css/       estilo do site
   static/imagens/   imagens
 manage.py
+build.sh            comandos que o Render roda a cada deploy
 .env.example        modelo das variáveis do banco (copiar para .env)
 ```
