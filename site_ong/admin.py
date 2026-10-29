@@ -14,3 +14,9 @@ class VoluntarioAdmin(admin.ModelAdmin):
     list_filter = ['periodo', 'projetos']
     search_fields = ['nome', 'email']
     filter_horizontal = ['projetos']
+
+
+# textos do admin do Django (/admin-django/): topo, aba do navegador e pagina inicial
+admin.site.site_header = 'Administração – Caminho da Esperança'
+admin.site.site_title = 'Admin Caminho da Esperança'
+admin.site.index_title = 'Painel de administração'
