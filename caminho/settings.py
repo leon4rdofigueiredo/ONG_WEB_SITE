@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 
 import os
 from pathlib import Path
+from urllib.parse import parse_qs, unquote, urlparse
 
 from dotenv import load_dotenv
 
@@ -102,9 +103,26 @@ WSGI_APPLICATION = 'caminho.wsgi.application'
 # o banco e escolhido pelo DB_ENGINE do .env: mysql (padrao), postgresql ou sqlite3.
 # no sqlite so precisa de DB_ENGINE=django.db.backends.sqlite3, o arquivo e o db.sqlite3 da raiz.
 # no Render o banco e Postgres (Neon): DB_ENGINE=django.db.backends.postgresql
-DB_ENGINE = os.environ.get('DB_ENGINE', 'django.db.backends.mysql')
+DB_ENGINE = os.environ.get('DB_ENGINE', 'django.db.backends.mysql').strip()
 
-if DB_ENGINE == 'django.db.backends.sqlite3':
+# se tiver DATABASE_URL (o endereco inteiro que o Neon mostra, postgresql://usuario:senha@host/banco),
+# ela vale no lugar das variaveis DB_* separadas
+DATABASE_URL = os.environ.get('DATABASE_URL', '').strip().strip('"\'')
+
+if DATABASE_URL:
+    url = urlparse(DATABASE_URL)
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': unquote(url.path.lstrip('/')),
+            'USER': unquote(url.username or ''),
+            'PASSWORD': unquote(url.password or ''),
+            'HOST': url.hostname,
+            'PORT': str(url.port or 5432),
+            'OPTIONS': {'sslmode': parse_qs(url.query).get('sslmode', ['require'])[0]},
+        }
+    }
+elif DB_ENGINE == 'django.db.backends.sqlite3':
     DATABASES = {
         'default': {
             'ENGINE': DB_ENGINE,
@@ -126,10 +144,10 @@ else:
     DATABASES = {
         'default': {
             'ENGINE': DB_ENGINE,
-            'NAME': os.environ.get('DB_NAME', 'caminho_esperanca'),
-            'USER': os.environ.get('DB_USER', ''),
-            'PASSWORD': os.environ.get('DB_PASSWORD', ''),
-            'HOST': os.environ.get('DB_HOST', 'localhost'),
+            'NAME': os.environ.get('DB_NAME', 'caminho_esperanca').strip(),
+            'USER': os.environ.get('DB_USER', '').strip(),
+            'PASSWORD': os.environ.get('DB_PASSWORD', '').strip(),
+            'HOST': os.environ.get('DB_HOST', 'localhost').strip(),
             'PORT': os.environ.get('DB_PORT', porta_padrao),
             'OPTIONS': opcoes,
         }
