@@ -1,7 +1,11 @@
 from datetime import date
 
 from django.conf import settings
+from django.contrib import messages
 from django.shortcuts import render, redirect
+
+from .forms import VoluntarioForm
+from .models import PERIODO_CHOICES, Projeto
 
 # os dados da equipe e dos projetos ficam em listas aqui e o html monta os cartoes com {% for %}.
 # assim, pra mudar um texto ou acrescentar um projeto, so mexe nessas listas e nao no html.
@@ -103,12 +107,9 @@ def projetos(request):
 def doacao(request):
     return render(request, 'doacao.html')
 
-# projetos que o voluntario pode escolher no formulario. o painel usa a mesma lista no filtro,
-# entao se um projeto entrar ou sair, muda so aqui.
-# inclui Alfabetizacao e Reforco Escolar: tem responsavel (Pamela), mas ainda nao tem pagina em Projetos
-PROJETOS_VOLUNTARIO = ['Futebol', 'Sopão Solidário', 'Curso de Informática', 'Curso de Elétrica',
-                       'Artes Marciais (Jiu-jitsu, Taekwondo e Muay Thai)', 'Ballet na Igreja',
-                       'Alfabetização e Reforço Escolar']
+# os projetos que o voluntario pode escolher agora ficam no banco (model Projeto).
+# o formulario e o filtro do painel usam a mesma tabela, entao pra um projeto entrar ou sair
+# e so mexer pelo admin do Django (/admin-django/)
 
 # situacao de cada cadastro no painel:
 # Pendente = ninguem analisou ainda | Ativo = aceito e ajudando
@@ -116,7 +117,31 @@ PROJETOS_VOLUNTARIO = ['Futebol', 'Sopão Solidário', 'Curso de Informática', 
 STATUS_VOLUNTARIO = ['Pendente', 'Ativo', 'Inativo', 'Recusado']
 
 def voluntario(request):
-    return render(request, 'voluntario.html', {'projetos': PROJETOS_VOLUNTARIO})
+    if request.method == 'POST':
+        form = VoluntarioForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Cadastro enviado! Obrigado por querer ajudar, em breve entraremos em contato.')
+            # redireciona pra que um F5 nao envie o mesmo cadastro de novo
+            return redirect('voluntario')
+    else:
+        form = VoluntarioForm()
+
+    # o html marca de novo o que a pessoa ja tinha escolhido quando o envio volta com erro
+    if form.is_bound:
+        periodo_escolhido = form.data.get('periodo', '')
+        projetos_escolhidos = form.data.getlist('projetos')
+    else:
+        periodo_escolhido = 'Manhã'
+        projetos_escolhidos = []
+
+    return render(request, 'voluntario.html', {
+        'form': form,
+        'projetos': Projeto.objects.all(),
+        'periodos': [valor for valor, _ in PERIODO_CHOICES],
+        'periodo_escolhido': periodo_escolhido,
+        'projetos_escolhidos': projetos_escolhidos,
+    })
 
 def login_admin(request):
     # login TEMPORARIO pra testar a tela enquanto nao tem banco: usuario admin, senha admin.
@@ -162,5 +187,5 @@ def painel_admin(request):
         'ativos_por_periodo': ativos_por_periodo,
         'por_status': por_status,
         'lista_status': STATUS_VOLUNTARIO,
-        'projetos': PROJETOS_VOLUNTARIO,
+        'projetos': Projeto.objects.all(),
     })

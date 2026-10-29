@@ -9,35 +9,54 @@
 
 <div class="fundo-voluntario">
 
-    <!-- formulario (o onsubmit impede a pagina de recarregar ao clicar em Enviar) -->
-    <form class="formulario" onsubmit="return false">
+    {% for mensagem in messages %}
+    <p class="aviso-sucesso">{{ mensagem }}</p>
+    {% endfor %}
+
+    {% if form.errors %}
+    <p class="aviso-erro">Confira os campos marcados abaixo.</p>
+    {% endif %}
+
+    <!-- os name="" dos campos precisam ser iguais aos do VoluntarioForm (site_ong/forms.py) -->
+    <form class="formulario" method="post">
+        {% csrf_token %}
 
         <div class="campo">
             <span class="icone">&#9998;</span>
             <label for="nome">Nome:</label>
-            <input type="text" id="nome" placeholder="Digite seu nome completo">
+            <input type="text" id="nome" name="nome" maxlength="150" required
+                   value="{{ form.nome.value|default_if_none:'' }}" placeholder="Digite seu nome completo">
+            {% if form.nome.errors %}<div class="erro-campo">{{ form.nome.errors.0 }}</div>{% endif %}
         </div>
 
         <div class="campo">
             <span class="icone">&#9742;</span>
             <label for="telefone">Telefone:</label>
-            <input type="tel" id="telefone" placeholder="(XX) XXXXX-XXXX">
+            <!-- o oninput coloca parenteses, espaco e traco enquanto a pessoa digita -->
+            <input type="tel" id="telefone" name="telefone" maxlength="15" required
+                   pattern="\(\d{2}\) \d{4,5}-\d{4}"
+                   oninput="mascaraTelefone(this)" oninvalid="mensagemTelefone(this)"
+                   value="{{ form.telefone.value|default_if_none:'' }}" placeholder="(XX) XXXXX-XXXX">
+            {% if form.telefone.errors %}<div class="erro-campo">{{ form.telefone.errors.0 }}</div>{% endif %}
         </div>
 
         <div class="campo">
             <span class="icone">&#9993;</span>
             <label for="email">E-mail:</label>
-            <input type="email" id="email" placeholder="seu@email.com">
+            <input type="email" id="email" name="email" required
+                   value="{{ form.email.value|default_if_none:'' }}" placeholder="seu@email.com">
+            {% if form.email.errors %}<div class="erro-campo">{{ form.email.errors.0 }}</div>{% endif %}
         </div>
 
         <div class="campo">
             <span class="icone">&#128197;</span>
             <label>Disponibilidade:</label>
             <div class="opcoes-linha">
-                <label class="opcao"><input type="radio" name="periodo" value="Manhã" checked> Manhã</label>
-                <label class="opcao"><input type="radio" name="periodo" value="Tarde"> Tarde</label>
-                <label class="opcao"><input type="radio" name="periodo" value="Noite"> Noite</label>
+                {% for periodo in periodos %}
+                <label class="opcao"><input type="radio" name="periodo" value="{{ periodo }}"{% if periodo == periodo_escolhido %} checked{% endif %}> {{ periodo }}</label>
+                {% endfor %}
             </div>
+            {% if form.periodo.errors %}<div class="erro-campo">{{ form.periodo.errors.0 }}</div>{% endif %}
         </div>
 
         <div class="campo campo-topo">
@@ -45,26 +64,59 @@
             <label>Projeto de interesse:</label>
             <div class="caixa-projetos">
                 {% for projeto in projetos %}
-                <label class="opcao"><input type="checkbox" name="projetos" value="{{ projeto }}"> {{ projeto }}</label>
+                <label class="opcao"><input type="checkbox" name="projetos" value="{{ projeto.pk }}"{% if projeto.pk|stringformat:'s' in projetos_escolhidos %} checked{% endif %}> {{ projeto.nome }}</label>
                 {% endfor %}
             </div>
+            {% if form.projetos.errors %}<div class="erro-campo">{{ form.projetos.errors.0 }}</div>{% endif %}
         </div>
 
         <div class="campo campo-topo">
             <span class="icone">&#9719;</span>
             <label for="horas">Horas por semana:</label>
             <div class="horas">
-                <!-- o oninput de um atualiza o outro, assim a caixa e a barra mostram sempre o mesmo numero -->
-                <input type="number" id="horas" min="0" max="20" value="0"
+                <!-- o oninput de um atualiza o outro, assim a caixa e a barra mostram sempre o mesmo numero.
+                     so a caixa tem name, entao e ela que vai pro servidor -->
+                <input type="number" id="horas" name="horas" min="0" max="20" required
+                       value="{{ form.horas.value|default_if_none:0 }}"
                        oninput="barra_horas.value = this.value">
-                <input type="range" id="barra_horas" min="0" max="20" value="0"
+                <input type="range" id="barra_horas" min="0" max="20"
+                       value="{{ form.horas.value|default_if_none:0 }}"
                        oninput="horas.value = this.value">
             </div>
+            {% if form.horas.errors %}<div class="erro-campo">{{ form.horas.errors.0 }}</div>{% endif %}
         </div>
 
         <button type="submit" class="botao-enviar">&#10148; Enviar</button>
     </form>
 
 </div>
+
+<script>
+    // deixa so os numeros e monta (XX) XXXX-XXXX (fixo, 10 digitos) ou (XX) XXXXX-XXXX (celular, 11 digitos)
+    function mascaraTelefone(campo) {
+        var n = campo.value.replace(/\D/g, '').substring(0, 11);
+        var meio = n.length > 10 ? 5 : 4;
+        var texto = n;
+        if (n.length > 2) {
+            texto = '(' + n.substring(0, 2) + ') ' + n.substring(2, 2 + meio);
+            if (n.length > 2 + meio) {
+                texto = texto + '-' + n.substring(2 + meio);
+            }
+        } else if (n.length > 0) {
+            texto = '(' + n;
+        }
+        campo.value = texto;
+        campo.setCustomValidity('');
+    }
+
+    // mensagem do balao do navegador (o mesmo que aparece no e-mail sem @), em portugues
+    function mensagemTelefone(campo) {
+        if (campo.validity.valueMissing) {
+            campo.setCustomValidity('Preencha o telefone.');
+        } else {
+            campo.setCustomValidity('Informe o telefone completo, com DDD. Exemplo: (21) 99999-8888');
+        }
+    }
+</script>
 
 {% endblock %}

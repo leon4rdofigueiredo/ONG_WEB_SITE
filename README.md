@@ -30,19 +30,26 @@ Feito com **Django** (Python), **HTML** e **CSS**.
    - Windows: `.venv\Scripts\activate`
    - Mac/Linux: `source .venv/bin/activate`
 
-3. Instalar o Django:
+3. Instalar as dependências:
    ```
-   pip install django
+   pip install -r requirements.txt
    ```
 
-4. Rodar o servidor:
+4. Configurar o banco (MySQL): copiar o `.env.example` para `.env` e preencher usuário e senha.
+   O `.env` não vai para o git.
+   Para usar o SQLite (sem servidor, arquivo `db.sqlite3`), deixe só `DB_ENGINE=django.db.backends.sqlite3` no `.env`.
+
+5. Criar as tabelas (e os projetos iniciais):
+   ```
+   python manage.py migrate
+   ```
+
+6. Rodar o servidor:
    ```
    python manage.py runserver
    ```
 
-5. Abrir no navegador: http://127.0.0.1:8000
-
-> O aviso *"You have unapplied migration(s)"* pode ser ignorado, porque o site ainda não usa banco de dados.
+7. Abrir no navegador: http://127.0.0.1:8000
 
 ### Login de teste
 
@@ -54,10 +61,10 @@ Esse login só funciona com `DEBUG = True` (no computador de quem está desenvol
 - Todas as páginas, com o mesmo menu e rodapé (`base.html`)
 - Layout responsivo: no celular o menu, as caixas e a tabela do painel se reorganizam
 - Busca e filtros da tabela do painel (rodam no navegador)
+- Cadastro de voluntário salvo no banco MySQL (models `Voluntario` e `Projeto`)
 
 ## O que ainda falta (backend)
 
-- Salvar as inscrições do formulário de voluntário no banco de dados
 - Login de verdade com usuários do Django (`LoginView`) no lugar do login de teste
 - Proteger o painel com `@login_required` e fazer o botão **Sair** usar o logout do Django
 - Trocar os cadastros de exemplo do painel pelos cadastros reais
@@ -68,8 +75,13 @@ Esse login só funciona com `DEBUG = True` (no computador de quem está desenvol
 caminho/            configurações do Django (settings.py, urls.py)
 site_ong/
   views.py          funções de cada página e textos dos projetos/equipe
+  models.py         tabelas do banco (Voluntario e Projeto)
+  forms.py          formulário de voluntário (validação)
+  admin.py          cadastros no admin do Django (/admin-django/)
+  migrations/       criação das tabelas e dos projetos iniciais
   templates/        páginas HTML (base.html tem o menu e o rodapé; chamada.html é a faixa do final de Sobre e Projetos)
   static/css/       estilo do site
   static/imagens/   imagens
 manage.py
+.env.example        modelo das variáveis do banco (copiar para .env)
 ```
