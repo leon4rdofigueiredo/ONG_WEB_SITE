@@ -7,7 +7,6 @@
     <title>Caminho da Esperança - Instituto Social</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <!-- o ?v= obriga o navegador a baixar o css de novo; aumente o numero quando mudar o estilo -->
     <link rel="stylesheet" href="{% static 'css/estilo.css' %}?v=15">
     <link rel="icon" href="{% static 'imagens/logo.png' %}">
 </head>
@@ -17,8 +16,7 @@
         <a href="{% url 'inicio' %}">
             <img src="{% static 'imagens/logo.png' %}" alt="Caminho da Esperança" class="logo">
         </a>
-        <!-- menu e rodape ficam em blocos pra as paginas do admin poderem esvaziar eles;
-             as outras paginas nao mexem nesses blocos e mostram tudo normalmente -->
+
         {% block menu %}
         <nav class="menu">
             <a href="{% url 'inicio' %}">Início</a>
